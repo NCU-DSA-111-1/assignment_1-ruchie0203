@@ -1,7 +1,7 @@
 #include "backprop.h"
 #include "layer.h"
 #include "neuron.h"
-
+#define TIME 20000
 
 layer *lay = NULL;
 int num_layers;
@@ -13,18 +13,28 @@ float **input;
 float **desired_outputs;
 int num_training_ex;
 int n=1;
+float error,MSE = 0,tMSE=0;
+FILE *fPtr;
+void compute_MSE(int i);
 
 int main(void)
 {
     int i;
+    
+    
+    //Open the file
+    if((fPtr = fopen("data.csv","w")) == NULL){
+        printf("File cannot be opened!");
+        return 0;
+    }
 
     srand(time(0));
 
     printf("Enter the number of Layers in Neural Network:\n");
     scanf("%d",&num_layers);
 
-    num_neurons = (int*) malloc(num_layers * sizeof(int));
-    memset(num_neurons,0,num_layers *sizeof(int));
+    num_neurons = (int*) malloc(num_layers * sizeof(int)); //malloc配置記憶體
+    memset(num_neurons,0,num_layers *sizeof(int)); //memset(要取代的目標,取代物,幾個byte)
 
     // Get number of neurons per layer
     for(i=0;i<num_layers;i++)
@@ -82,7 +92,7 @@ int main(void)
     return 0;
 }
 
-
+//Iniitialize the structure
 int init()
 {
     if(create_architecture() != SUCCESS_CREATE_ARCHITECTURE)
@@ -106,8 +116,7 @@ void  get_inputs()
 
             for(j=0;j<num_neurons[0];j++)
             {
-                scanf("%f",&input[i][j]);
-                
+                scanf("%f",&input[i][j]); 
             }
             printf("\n");
         }
@@ -129,17 +138,8 @@ void get_desired_outputs()
     }
 }
 
-// Feed inputs to input layer
-void feed_input(int i)
-{
-    int j;
 
-    for(j=0;j<num_neurons[0];j++)
-    {
-        lay[0].neu[j].actv = input[i][j];
-        printf("Input: %f\n",lay[0].neu[j].actv);
-    }
-}
+
 
 // Create Neural Network Architecture
 int create_architecture()
@@ -222,11 +222,11 @@ int initialize_weights(void)
 // Train Neural Network
 void train_neural_net(void)
 {
-    int i;
+    int i,j;
     int it=0;
-
+    fprintf(fPtr,"Num,MSE\n");
     // Gradient Descent
-    for(it=0;it<20000;it++)
+    for(it=0;it<TIME;it++)
     {
         for(i=0;i<num_training_ex;i++)
         {
@@ -234,12 +234,89 @@ void train_neural_net(void)
             forward_prop();
             compute_cost(i);
             back_prop(i);
-            update_weights();
+            update_weights();    
+        }
+        compute_MSE(it);
+    }
+    //Close the file
+    fclose(fPtr);
+}
+
+// Feed inputs to input layer
+void feed_input(int i)
+{
+    int j;
+
+    for(j=0;j<num_neurons[0];j++)
+    {
+        lay[0].neu[j].actv = input[i][j];
+        printf("Input: %f\n",lay[0].neu[j].actv);
+    }
+}
+
+//Forward Pass
+void forward_prop(void)
+{
+    int i,j,k;
+
+    for(i=1;i<num_layers;i++)
+    {   
+        for(j=0;j<num_neurons[i];j++)
+        {
+            lay[i].neu[j].z = lay[i].neu[j].bias;
+
+            for(k=0;k<num_neurons[i-1];k++)
+            {
+                lay[i].neu[j].z  = lay[i].neu[j].z + ((lay[i-1].neu[k].out_weights[j])* (lay[i-1].neu[k].actv));
+            }
+
+            // Use Relu as Activation Function for Hidden Layers
+            if(i < num_layers-1)
+            {
+                if((lay[i].neu[j].z) < 0)
+                {
+                    lay[i].neu[j].actv = 0;
+                }
+
+                else
+                {
+                    lay[i].neu[j].actv = lay[i].neu[j].z;
+                }
+            }
+            
+            // Use Sigmoid as Activation Function for Output Layer
+            else
+            {
+                lay[i].neu[j].actv = 1/(1+exp(-lay[i].neu[j].z));
+                printf("Output: %d\n", (int)round(lay[i].neu[j].actv));
+            }
         }
     }
 }
 
+// Compute Total Cost
+void compute_cost(int i)
+{
+    int j;
+    float tmpcost=0;
+    float tcost=0;
+    for(j=0;j<num_neurons[num_layers-1];j++)
+    {
+        tmpcost = desired_outputs[i][j] - lay[num_layers-1].neu[j].actv;
+        cost[j] = (tmpcost * tmpcost)/2;
+        tcost = tcost + cost[j];
+        tMSE += tmpcost*tmpcost;
+    }       
+    full_cost = (full_cost + tcost)/n;
+    n++;
+    
+}
 
+//Compute the MSE(Mean Square Error)
+void compute_MSE(int i){
+    MSE = tMSE/(4*(i+1));
+    fprintf(fPtr,"%d,%f\n",i+1,MSE);
+}   
 
 void update_weights(void)
 {
@@ -261,64 +338,8 @@ void update_weights(void)
     }   
 }
 
-void forward_prop(void)
-{
-    int i,j,k;
 
-    for(i=1;i<num_layers;i++)
-    {   
-        for(j=0;j<num_neurons[i];j++)
-        {
-            lay[i].neu[j].z = lay[i].neu[j].bias;
 
-            for(k=0;k<num_neurons[i-1];k++)
-            {
-                lay[i].neu[j].z  = lay[i].neu[j].z + ((lay[i-1].neu[k].out_weights[j])* (lay[i-1].neu[k].actv));
-            }
-
-            // Relu Activation Function for Hidden Layers
-            if(i < num_layers-1)
-            {
-                if((lay[i].neu[j].z) < 0)
-                {
-                    lay[i].neu[j].actv = 0;
-                }
-
-                else
-                {
-                    lay[i].neu[j].actv = lay[i].neu[j].z;
-                }
-            }
-            
-            // Sigmoid Activation function for Output Layer
-            else
-            {
-                lay[i].neu[j].actv = 1/(1+exp(-lay[i].neu[j].z));
-                printf("Output: %d\n", (int)round(lay[i].neu[j].actv));
-                printf("\n");
-            }
-        }
-    }
-}
-
-// Compute Total Cost
-void compute_cost(int i)
-{
-    int j;
-    float tmpcost=0;
-    float tcost=0;
-
-    for(j=0;j<num_neurons[num_layers-1];j++)
-    {
-        tmpcost = desired_outputs[i][j] - lay[num_layers-1].neu[j].actv;
-        cost[j] = (tmpcost * tmpcost)/2;
-        tcost = tcost + cost[j];
-    }   
-
-    full_cost = (full_cost + tcost)/n;
-    n++;
-    // printf("Full Cost: %f\n",full_cost);
-}
 
 // Back Propogate Error
 void back_prop(int p)
@@ -379,18 +400,24 @@ void test_nn(void)
         for(i=0;i<num_neurons[0];i++)
         {
             scanf("%f",&lay[0].neu[i].actv);
+            //Enter '2' to end the input section
+            if(lay[0].neu[i].actv==2){
+                printf("End the file!\n");
+                return;
+            }
         }
         forward_prop();
+        printf("\n");
     }
 }
 
-// TODO: Add different Activation functions
-//void activation_functions()
-
+// Free up the memories
 int dinit(void)
 {
-    // TODO:
-    // Free up all the structures
-
+    free(num_neurons);
+    free(lay);
+    free(input);
+    free(desired_outputs);
+    free(cost);
     return SUCCESS_DINIT;
 }
