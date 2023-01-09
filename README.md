@@ -1,6 +1,5 @@
 # Assignment_1
 * Using Neural Network to learn XOR
-## Compile & Run
 
 # Compile
 ```
