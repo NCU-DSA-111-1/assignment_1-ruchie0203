@@ -3,6 +3,7 @@ CFLAGS = -g -Wall -Werror
 CFILE = $(wildcard src/*.c)
 OFILE = $(subst src,build,$(patsubst %.c,%.o,$(CFILE)))
 main = $(notdir $(OFILE))
+CC = gcc
 backprop: $(main)
 	$(CC) $(LDFLAGS) -o bin/backprop $(OFILE) -lm
 
