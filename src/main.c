@@ -1,6 +1,6 @@
-#include "backprop.h"
-#include "layer.h"
-#include "neuron.h"
+#include "../inc/backprop.h"
+#include "../inc/layer.h"
+#include "../inc/neuron.h"
 #define TIME 20000
 
 layer *lay = NULL;
@@ -222,7 +222,7 @@ int initialize_weights(void)
 // Train Neural Network
 void train_neural_net(void)
 {
-    int i,j;
+    int i;
     int it=0;
     fprintf(fPtr,"Num,MSE\n");
     // Gradient Descent

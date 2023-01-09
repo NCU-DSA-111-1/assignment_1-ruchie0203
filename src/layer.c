@@ -1,4 +1,4 @@
-#include "layer.h"
+#include "../inc/layer.h"
 
 
 layer create_layer(int number_of_neurons)

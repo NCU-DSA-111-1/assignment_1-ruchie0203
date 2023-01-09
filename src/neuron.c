@@ -1,4 +1,4 @@
-#include "neuron.h"
+#include "../inc/neuron.h"
 
 
 neuron create_neuron(int num_out_weights)
