@@ -1,13 +1,14 @@
 # Assignment_1
 * Using Neural Network to learn XOR
----
 ## Compile & Run
-```
-# Compile
-gcc main.c -lm layer.c neuron.c
 
+# Compile
+```
+> make
+```
 # Run
-./a.out
+```
+> make nn
 
 Enter the number of Layers in Neural Network: 4 
 Enter number of neurons in layer[1]:  2 
